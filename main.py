@@ -9,6 +9,7 @@ import datetime
 import time
 from typing import List
 import random
+import os
 
 proxyUrl = 'http://77.247.89.250:8080'
 
@@ -46,7 +47,7 @@ async def GetLatestPastes():
 
             proxy = getRandomProxy()
             
-            r = requests.get("https://pastebin.com/archive", proxies=proxy)
+            r = requests.get("https://pastebin.com/archive", proxies=proxy, timeout=4)
             html = r.text
 
             parsed_html = BeautifulSoup(html, features='html.parser')
@@ -54,7 +55,7 @@ async def GetLatestPastes():
 
             if pastebinsMainTable_html is not None:
                 succeeded = True
-        except:
+        except Exception as e:
             pass
     
 
@@ -105,6 +106,54 @@ async def GetLatestPastes():
 
     print('Saved: ' + str(len(savedPastebins)))
 
+def downloadRAW():
+    try:
+        os.makedirs('Raw')
+    except FileExistsError:
+        pass
+
+    with open('data.json', 'r') as f:
+        savedPastebins = json.load(f)
+
+    for pastebin in savedPastebins:
+
+        if 'downloaded' in pastebin.keys():
+            continue
+
+        succeeded = False
+
+        while succeeded is False:
+            try:
+
+                proxy = getRandomProxy()
+            
+                r = requests.get("https://pastebin.com"+ pastebin['href'], proxies=proxy, timeout=4)
+                html = r.text
+
+                if 'This page has been removed!' in html:
+                    pastebin['downloaded'] = True
+                    with open('data.json', 'w') as fp:
+                        json.dump(savedPastebins, fp)
+                    continue
+
+                if 'Completing the CAPTCHA' in html or 'blocked your IP from accessing our website because we have' in html or 'resolve_captcha_headline' in html:
+                    raise Exception()
+
+                with open('Raw/'+pastebin['href'].replace('/raw/','')+'.txt', 'w', encoding='utf-8') as fp:
+                    fp.write(html)
+                    pastebin['downloaded'] = True
+                    with open('data.json', 'w') as fp:
+                        json.dump(savedPastebins, fp)
+                    succeeded = True
+                    continue
+                    
+
+            except Exception as e:
+                pass
+    
+    with open('data.json', 'w') as fp:
+        json.dump(savedPastebins, fp)
+
 async def __main():
     global ip_addresses
 
@@ -114,7 +163,8 @@ async def __main():
         ip_addresses = r.text.split('\r\n')
 
         await GetLatestPastes()
-        await asyncio.sleep(120)
+        downloadRAW()
+        await asyncio.sleep(60)
 
 if __name__ == "__main__":
     loop = asyncio.new_event_loop()
