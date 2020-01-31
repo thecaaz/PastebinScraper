@@ -8,15 +8,19 @@ from bs4 import BeautifulSoup
 import datetime
 import time
 from typing import List
-from pastebin import PastebinAPI
+import random
 
-headers = {
-    'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:55.0) "
-    "Gecko/20100101 Firefox/55.0"
+proxyUrl = 'http://77.247.89.250:8080'
+
+proxies = {
+    "http": "http://103.76.253.156:3128",
+    "https": "http://103.76.253.156:3128",
 }
 
+ip_addresses = []
+
 async def __getContentAsStringFromInOneSession(session, url: str):
-    async with session.get(url,headers=headers) as resp:
+    async with session.get(url,headers=headers,proxy=proxyUrl) as resp:
         html = await resp.text()
         return html.replace('\r\n', '').replace('\n', '')
 
@@ -24,14 +28,37 @@ async def __getContentAsStringFrom(url: str):
     async with aiohttp.ClientSession() as session:
         return await __getContentAsStringFromInOneSession(session, url)
 
+def getRandomProxy():
+    global ip_addresses
+
+    proxy_index = random.randint(0, len(ip_addresses) - 1)
+    proxy = {"http": ip_addresses[proxy_index], "https": ip_addresses[proxy_index]}
+
+    return proxy
+
 async def GetLatestPastes():
     pastebins = []
 
-    html: str = await __getContentAsStringFrom('https://pastebin.com/archive')
+    succeeded = False
 
-    if 'Scraping our site' in html:
-        await asyncio.sleep(120)
-        return
+    while succeeded is False:
+        try:
+
+            proxy = getRandomProxy()
+            
+            r = requests.get("https://pastebin.com/archive", proxies=proxy)
+            html = r.text
+
+            parsed_html = BeautifulSoup(html, features='html.parser')
+            pastebinsMainTable_html = parsed_html.body.find('table', attrs={'class': 'maintable'})
+
+            if pastebinsMainTable_html is not None:
+                succeeded = True
+        except:
+            pass
+    
+
+    # html: str = await __getContentAsStringFrom('https://pastebin.com/archive')
 
     parsed_html = BeautifulSoup(html, features='html.parser')
     pastebinsMainTable_html = parsed_html.body.find('table', attrs={'class': 'maintable'})
@@ -79,7 +106,13 @@ async def GetLatestPastes():
     print('Saved: ' + str(len(savedPastebins)))
 
 async def __main():
+    global ip_addresses
+
     while(True):
+        
+        r = requests.get("https://www.proxy-list.download/api/v1/get?type=https&anon=transparent")
+        ip_addresses = r.text.split('\r\n')
+
         await GetLatestPastes()
         await asyncio.sleep(120)
 
