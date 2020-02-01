@@ -88,8 +88,8 @@ async def GetLatestPastes():
         except:
             paste['language'] = ''
 
-        if paste['name'] == 'Untitled':
-            pastebins.append(paste)
+        #if paste['name'] == 'Untitled':
+        pastebins.append(paste)
 
     savedPastebins = []
 
