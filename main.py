@@ -10,30 +10,37 @@ import time
 from typing import List
 import random
 import os
-
-proxyUrl = 'http://77.247.89.250:8080'
-
-proxies = {
-    "http": "http://103.76.253.156:3128",
-    "https": "http://103.76.253.156:3128",
-}
+from threading import Thread
 
 ip_addresses = []
 
 async def __getContentAsStringFromInOneSession(session, url: str):
-    async with session.get(url,headers=headers,proxy=proxyUrl) as resp:
+    proxyUrl = getRandomProxyAsyncHttps()
+    async with session.get(url,proxy=proxyUrl) as resp:
         html = await resp.text()
         return html.replace('\r\n', '').replace('\n', '')
 
 async def __getContentAsStringFrom(url: str):
     async with aiohttp.ClientSession() as session:
-        return await __getContentAsStringFromInOneSession(session, url)
+        while True:
+            try:
+                return await __getContentAsStringFromInOneSession(session, url)
+            except Exception as e:
+                pass
 
 def getRandomProxy():
     global ip_addresses
 
     proxy_index = random.randint(0, len(ip_addresses) - 1)
     proxy = {"http": ip_addresses[proxy_index], "https": ip_addresses[proxy_index]}
+
+    return proxy
+
+def getRandomProxyAsyncHttps():
+    global ip_addresses
+
+    proxy_index = random.randint(0, len(ip_addresses) - 1)
+    proxy = 'https://' + ip_addresses[proxy_index]
 
     return proxy
 
@@ -106,6 +113,7 @@ async def GetLatestPastes():
 
     print('Saved: ' + str(len(savedPastebins)))
 
+
 def downloadRAW():
     try:
         os.makedirs('Raw')
@@ -115,46 +123,57 @@ def downloadRAW():
     with open('data.json', 'r') as f:
         savedPastebins = json.load(f)
 
+    threads = []
+
     for pastebin in savedPastebins:
 
         if 'downloaded' in pastebin.keys():
             continue
 
-        succeeded = False
+        process = Thread(target=downloadSingleRAW, args=[pastebin, savedPastebins])
+        process.start()
+        threads.append(process)
 
-        while succeeded is False:
-            try:
-
-                proxy = getRandomProxy()
-            
-                r = requests.get("https://pastebin.com"+ pastebin['href'], proxies=proxy, timeout=4)
-                html = r.text
-
-                if 'This page has been removed!' in html:
-                    pastebin['downloaded'] = True
-                    with open('data.json', 'w') as fp:
-                        json.dump(savedPastebins, fp)
-                    print('Removed')
-                    continue
-
-                if 'Completing the CAPTCHA' in html or 'blocked your IP from accessing our website because we have' in html or 'resolve_captcha_headline' in html:
-                    raise Exception()
-
-                with open('Raw/'+pastebin['href'].replace('/raw/','')+'.txt', 'w', encoding='utf-8') as fp:
-                    fp.write(html)
-                    pastebin['downloaded'] = True
-                    with open('data.json', 'w') as fp:
-                        json.dump(savedPastebins, fp)
-                    succeeded = True
-                    print('Raw ' + pastebin['href'] + ' downloaded')
-                    continue
-                    
-
-            except Exception as e:
-                pass
+        #downloadSingleRAW(pastebin,savedPastebins)
     
+    for process in threads:
+        process.join()
+
     with open('data.json', 'w') as fp:
         json.dump(savedPastebins, fp)
+
+def downloadSingleRAW(pastebin,savedPastebins):
+    succeeded = False
+
+    while succeeded is False:
+        try:
+
+            proxy = getRandomProxy()
+            
+            r = requests.get("https://pastebin.com"+ pastebin['href'], proxies=proxy, timeout=4)
+            html = r.text
+
+            if 'This page has been removed!' in html:
+                pastebin['downloaded'] = True
+                with open('data.json', 'w') as fp:
+                    json.dump(savedPastebins, fp)
+                print('Removed')
+                continue
+
+            if 'Completing the CAPTCHA' in html or 'blocked your IP from accessing our website because we have' in html or 'resolve_captcha_headline' in html:
+                raise Exception()
+
+            with open('Raw/'+pastebin['href'].replace('/raw/','')+'.txt', 'w', encoding='utf-8') as fp:
+                fp.write(html)
+                pastebin['downloaded'] = True
+                with open('data.json', 'w') as fp:
+                    json.dump(savedPastebins, fp)
+                succeeded = True
+                print('Raw ' + pastebin['href'] + ' downloaded')
+                continue
+
+        except Exception as e:
+            pass
 
 async def __main():
     global ip_addresses
@@ -169,6 +188,7 @@ async def __main():
 
         await GetLatestPastes()
         downloadRAW()
+        #await downloadRAWAsync()
         await asyncio.sleep(10)
         count = count + 1
         if count == 5:
