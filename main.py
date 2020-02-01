@@ -155,8 +155,9 @@ def downloadSingleRAW(pastebin,savedPastebins):
 
             if 'This page has been removed!' in html:
                 pastebin['downloaded'] = True
-                with open('data.json', 'w') as fp:
-                    json.dump(savedPastebins, fp)
+                #with open('data.json', 'w') as fp:
+                #    json.dump(savedPastebins, fp)
+                succeeded = True
                 print('Removed')
                 continue
 
@@ -166,8 +167,8 @@ def downloadSingleRAW(pastebin,savedPastebins):
             with open('Raw/'+pastebin['href'].replace('/raw/','')+'.txt', 'w', encoding='utf-8') as fp:
                 fp.write(html)
                 pastebin['downloaded'] = True
-                with open('data.json', 'w') as fp:
-                    json.dump(savedPastebins, fp)
+                #with open('data.json', 'w') as fp:
+                #    json.dump(savedPastebins, fp)
                 succeeded = True
                 print('Raw ' + pastebin['href'] + ' downloaded')
                 continue
