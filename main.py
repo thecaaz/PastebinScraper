@@ -134,6 +134,7 @@ def downloadRAW():
                     pastebin['downloaded'] = True
                     with open('data.json', 'w') as fp:
                         json.dump(savedPastebins, fp)
+                    print('Removed')
                     continue
 
                 if 'Completing the CAPTCHA' in html or 'blocked your IP from accessing our website because we have' in html or 'resolve_captcha_headline' in html:
@@ -145,6 +146,7 @@ def downloadRAW():
                     with open('data.json', 'w') as fp:
                         json.dump(savedPastebins, fp)
                     succeeded = True
+                    print('Raw ' + pastebin['href'] + ' downloaded')
                     continue
                     
 
@@ -157,14 +159,20 @@ def downloadRAW():
 async def __main():
     global ip_addresses
 
+    count = 0
+
     while(True):
         
-        r = requests.get("https://www.proxy-list.download/api/v1/get?type=https&anon=transparent")
-        ip_addresses = r.text.split('\r\n')
+        if count == 0:
+            r = requests.get("https://www.proxy-list.download/api/v1/get?type=https&anon=transparent")
+            ip_addresses = r.text.split('\r\n')
 
         await GetLatestPastes()
         downloadRAW()
-        await asyncio.sleep(60)
+        await asyncio.sleep(10)
+        count = count + 1
+        if count == 5:
+            count = 0
 
 if __name__ == "__main__":
     loop = asyncio.new_event_loop()
