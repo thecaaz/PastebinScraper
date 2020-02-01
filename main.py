@@ -88,7 +88,7 @@ async def GetLatestPastes():
         except:
             paste['language'] = ''
 
-        if paste['language'] == '' and paste['name'] == 'Untitled':
+        if paste['name'] == 'Untitled':
             pastebins.append(paste)
 
     savedPastebins = []
@@ -191,7 +191,7 @@ async def __main():
         #await downloadRAWAsync()
         await asyncio.sleep(10)
         count = count + 1
-        if count == 5:
+        if count == 20:
             count = 0
 
 if __name__ == "__main__":
