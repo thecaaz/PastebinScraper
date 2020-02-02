@@ -8,6 +8,7 @@ ignoreList = []
 def saveIfNotIgnored(search,string):
     
     for ignore in ignoreList:
+        ignore = ignore.replace('\n','')
         if ignore in string:
             return
 
