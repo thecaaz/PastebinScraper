@@ -165,7 +165,7 @@ def downloadSingleRAW(pastebin,savedPastebins):
                 raise Exception()
 
             with open('Raw/'+pastebin['href'].replace('/raw/','')+'.txt', 'w', encoding='utf-8') as fp:
-                fp.write('Pastename: ' + pastebin['name'])
+                fp.write('Pastename: ' + pastebin['name'] + '\r\n')
                 fp.write(html)
                 pastebin['downloaded'] = True
                 #with open('data.json', 'w') as fp:
@@ -187,6 +187,10 @@ async def __main():
         if count == 0:
             r = requests.get("https://www.proxy-list.download/api/v1/get?type=https&anon=transparent")
             ip_addresses = r.text.split('\r\n')
+            if len(ip_addresses) < 2:
+                raise Exception('Unable to get proxy list')
+            else:
+                print('Got ' + str(len(ip_addresses)) + ' proxies')
 
         await GetLatestPastes()
         downloadRAW()

@@ -36,7 +36,7 @@ if __name__ == "__main__":
                     if search in string:
                         saveIfNotIgnored(search,string)
                         break
-        except FileNotFoundError as e:
+        except Exception as e:
             pass
 
     print('Done')
