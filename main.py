@@ -164,7 +164,7 @@ def downloadSingleRAW(pastebin,savedPastebins):
             if 'Completing the CAPTCHA' in html or 'blocked your IP from accessing our website because we have' in html or 'resolve_captcha_headline' in html:
                 raise Exception()
 
-            with open('Raw/'+pastebin['href'].replace('/raw/','')+'.txt', 'w', encoding='utf-8') as fp:
+            with open('Raw/' + str(len(savedPastebins)) + pastebin['href'].replace('/raw/','')+'.txt', 'w', encoding='utf-8') as fp:
                 fp.write('Pastename: ' + pastebin['name'] + '\r\n')
                 fp.write(html)
                 pastebin['downloaded'] = True
