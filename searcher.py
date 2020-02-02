@@ -3,6 +3,19 @@ import os
 
 savedPastebins = []
 searchList = []
+ignoreList = []
+
+def saveIfNotIgnored(search,string):
+    
+    for ignore in ignoreList:
+        if ignore in string:
+            return
+
+    with open('RawInteresting/'+filename, 'w', encoding='utf-8') as wf:
+        wf.write('Term Matched: ' +search)
+        wf.write('\r\n')
+        wf.write(string)
+    print(filename)
 
 if __name__ == "__main__":
     print('Starting...')
@@ -11,6 +24,8 @@ if __name__ == "__main__":
 
     with open('searchCriteria', 'r') as f:
         searchList = f.readlines()
+    with open('ignoreCriteria', 'r') as f:
+        ignoreList = f.readlines()
 
     for pastebin in savedPastebins:
         filename = pastebin['href'].replace('/raw/','')+'.txt'
@@ -19,11 +34,7 @@ if __name__ == "__main__":
                 string = f.read()
                 for search in searchList:
                     if search in string:
-                        with open('RawInteresting/'+filename, 'w', encoding='utf-8') as wf:
-                            wf.write('Term Matched: ' +search)
-                            wf.write('\r\n')
-                            wf.write(string)
-                        print(filename)
+                        saveIfNotIgnored(search,string)
                         break
         except FileNotFoundError as e:
             pass
