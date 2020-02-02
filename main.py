@@ -165,6 +165,7 @@ def downloadSingleRAW(pastebin,savedPastebins):
                 raise Exception()
 
             with open('Raw/'+pastebin['href'].replace('/raw/','')+'.txt', 'w', encoding='utf-8') as fp:
+                fp.write('Pastename: ' + pastebin['name'])
                 fp.write(html)
                 pastebin['downloaded'] = True
                 #with open('data.json', 'w') as fp:
