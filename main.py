@@ -11,36 +11,16 @@ from typing import List
 import random
 import os
 from threading import Thread
+import Classes
+from base import Session
 
 ip_addresses = []
-
-async def __getContentAsStringFromInOneSession(session, url: str):
-    proxyUrl = getRandomProxyAsyncHttps()
-    async with session.get(url,proxy=proxyUrl) as resp:
-        html = await resp.text()
-        return html.replace('\r\n', '').replace('\n', '')
-
-async def __getContentAsStringFrom(url: str):
-    async with aiohttp.ClientSession() as session:
-        while True:
-            try:
-                return await __getContentAsStringFromInOneSession(session, url)
-            except Exception as e:
-                pass
 
 def getRandomProxy():
     global ip_addresses
 
     proxy_index = random.randint(0, len(ip_addresses) - 1)
     proxy = {"http": ip_addresses[proxy_index], "https": ip_addresses[proxy_index]}
-
-    return proxy
-
-def getRandomProxyAsyncHttps():
-    global ip_addresses
-
-    proxy_index = random.randint(0, len(ip_addresses) - 1)
-    proxy = 'https://' + ip_addresses[proxy_index]
 
     return proxy
 
@@ -130,11 +110,11 @@ def downloadRAW():
         if 'downloaded' in pastebin.keys():
             continue
 
-        process = Thread(target=downloadSingleRAW, args=[pastebin, savedPastebins])
-        process.start()
-        threads.append(process)
+        #process = Thread(target=downloadSingleRAW, args=[pastebin, savedPastebins])
+        #process.start()
+        #threads.append(process)
 
-        #downloadSingleRAW(pastebin,savedPastebins)
+        downloadSingleRAW(pastebin,savedPastebins)
     
     for process in threads:
         process.join()
@@ -155,8 +135,8 @@ def downloadSingleRAW(pastebin,savedPastebins):
 
             if 'This page has been removed!' in html:
                 pastebin['downloaded'] = True
-                #with open('data.json', 'w') as fp:
-                #    json.dump(savedPastebins, fp)
+                with open('data.json', 'w') as fp:
+                    json.dump(savedPastebins, fp)
                 succeeded = True
                 print('Removed')
                 continue
@@ -168,8 +148,8 @@ def downloadSingleRAW(pastebin,savedPastebins):
                 fp.write('Pastename: ' + pastebin['name'] + '\r\n')
                 fp.write(html)
                 pastebin['downloaded'] = True
-                #with open('data.json', 'w') as fp:
-                #    json.dump(savedPastebins, fp)
+                with open('data.json', 'w') as fp:
+                    json.dump(savedPastebins, fp)
                 succeeded = True
                 print('Raw ' + pastebin['href'] + ' downloaded')
                 continue
@@ -180,12 +160,24 @@ def downloadSingleRAW(pastebin,savedPastebins):
 async def __main():
     global ip_addresses
 
+    session = Session()
+
+    paste = Classes.Paste()
+    paste.content = 'Content'
+    paste.language = 'Language'
+    paste.name = 'Name'
+
+    #session.add(paste)
+
+    session.commit()
+    session.close()
+
     count = 0
 
     while(True):
         
         if count == 0:
-            r = requests.get("https://www.proxy-list.download/api/v1/get?type=https&anon=transparent")
+            r = requests.get("https://www.proxy-list.download/api/v1/get?type=https")
             ip_addresses = r.text.split('\r\n')
             if len(ip_addresses) < 2:
                 raise Exception('Unable to get proxy list')
@@ -194,7 +186,6 @@ async def __main():
 
         await GetLatestPastes()
         downloadRAW()
-        #await downloadRAWAsync()
         await asyncio.sleep(10)
         count = count + 1
         if count == 20:
