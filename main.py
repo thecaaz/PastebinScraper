@@ -185,8 +185,9 @@ async def __main():
     while(True):
         
         if count == 0:
-            r = requests.get("https://www.proxy-list.download/api/v1/get?type=https&anon=transparent")
-            ip_addresses = r.text.split('\r\n')
+            ip_addresses = []
+            r = requests.get("https://www.proxy-list.download/api/v1/get?type=https")
+            ip_addresses.extend(r.text.split('\r\n'))
             if len(ip_addresses) < 2:
                 raise Exception('Unable to get proxy list')
             else:
