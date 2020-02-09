@@ -8,7 +8,7 @@ import configparser
 config = configparser.ConfigParser()
 config.read('login.config')
 
-engine = create_engine('mysql://%s:%s@%s:3306/%s' % (
+engine = create_engine('mysql://%s:%s@%s:3306/%s?charset=utf8mb4' % (
     config['SQL']['user'],
     config['SQL']['pass'],
     config['SQL']['host'],
