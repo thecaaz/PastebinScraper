@@ -94,7 +94,7 @@ async def GetLatestPastes():
     with open('data.json', 'w') as fp:
         json.dump(savedPastebins, fp)
 
-    print('Saved: ' + str(len(savedPastebins)))
+    print('Fetched!')
 
 
 def downloadRAW():
