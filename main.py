@@ -11,36 +11,17 @@ from typing import List
 import random
 import os
 from threading import Thread
+import Classes
+from base import Session
 
 ip_addresses = []
-
-async def __getContentAsStringFromInOneSession(session, url: str):
-    proxyUrl = getRandomProxyAsyncHttps()
-    async with session.get(url,proxy=proxyUrl) as resp:
-        html = await resp.text()
-        return html.replace('\r\n', '').replace('\n', '')
-
-async def __getContentAsStringFrom(url: str):
-    async with aiohttp.ClientSession() as session:
-        while True:
-            try:
-                return await __getContentAsStringFromInOneSession(session, url)
-            except Exception as e:
-                pass
+upload_pastes = []
 
 def getRandomProxy():
     global ip_addresses
 
     proxy_index = random.randint(0, len(ip_addresses) - 1)
     proxy = {"http": ip_addresses[proxy_index], "https": ip_addresses[proxy_index]}
-
-    return proxy
-
-def getRandomProxyAsyncHttps():
-    global ip_addresses
-
-    proxy_index = random.randint(0, len(ip_addresses) - 1)
-    proxy = 'https://' + ip_addresses[proxy_index]
 
     return proxy
 
@@ -64,9 +45,6 @@ async def GetLatestPastes():
                 succeeded = True
         except Exception as e:
             pass
-    
-
-    # html: str = await __getContentAsStringFrom('https://pastebin.com/archive')
 
     parsed_html = BeautifulSoup(html, features='html.parser')
     pastebinsMainTable_html = parsed_html.body.find('table', attrs={'class': 'maintable'})
@@ -88,7 +66,6 @@ async def GetLatestPastes():
         except:
             paste['language'] = ''
 
-        #if paste['name'] == 'Untitled':
         pastebins.append(paste)
 
     savedPastebins = []
@@ -98,6 +75,9 @@ async def GetLatestPastes():
             savedPastebins = json.load(f)
     except:
         pass
+
+    if len(savedPastebins) > 200:
+        savedPastebins = savedPastebins[-60:]
 
     for fetchedPaste in pastebins:
         exists = False
@@ -111,10 +91,14 @@ async def GetLatestPastes():
     with open('data.json', 'w') as fp:
         json.dump(savedPastebins, fp)
 
-    print('Saved: ' + str(len(savedPastebins)))
+    print('Fetched!')
 
 
 def downloadRAW():
+    global upload_pastes
+
+    upload_pastes = []
+
     try:
         os.makedirs('Raw')
     except FileExistsError:
@@ -138,11 +122,21 @@ def downloadRAW():
     
     for process in threads:
         process.join()
+    
+    session = Session()
+
+    session.bulk_save_objects(upload_pastes)
+
+    session.commit()
+    session.close()
+
+    print('Inserted ' + str(len(upload_pastes)) + ' new pastes')
 
     with open('data.json', 'w') as fp:
         json.dump(savedPastebins, fp)
 
 def downloadSingleRAW(pastebin,savedPastebins):
+    global upload_pastes
     succeeded = False
 
     while succeeded is False:
@@ -155,8 +149,8 @@ def downloadSingleRAW(pastebin,savedPastebins):
 
             if 'This page has been removed!' in html:
                 pastebin['downloaded'] = True
-                #with open('data.json', 'w') as fp:
-                #    json.dump(savedPastebins, fp)
+                with open('data.json', 'w') as fp:
+                    json.dump(savedPastebins, fp)
                 succeeded = True
                 print('Removed')
                 continue
@@ -164,30 +158,30 @@ def downloadSingleRAW(pastebin,savedPastebins):
             if 'Completing the CAPTCHA' in html or 'blocked your IP from accessing our website because we have' in html or 'resolve_captcha_headline' in html:
                 raise Exception()
 
-            with open('Raw/' + str(len(savedPastebins)) + pastebin['href'].replace('/raw/','')+'.txt', 'w', encoding='utf-8') as fp:
-                fp.write('Pastename: ' + pastebin['name'] + '\r\n')
-                fp.write(html)
-                pastebin['downloaded'] = True
-                #with open('data.json', 'w') as fp:
-                #    json.dump(savedPastebins, fp)
-                succeeded = True
-                print('Raw ' + pastebin['href'] + ' downloaded')
-                continue
+            paste = Classes.Paste()
+            paste.href = pastebin['href']
+            paste.name = pastebin['name']
+            paste.language = pastebin['language']
+            paste.content = html.encode("utf-8")
+            succeeded = True
+            pastebin['downloaded'] = True
+            with open('data.json', 'w') as fp:
+                json.dump(savedPastebins, fp)
+            upload_pastes.append(paste)
+            print('Raw ' + pastebin['href'] + ' downloaded')
 
         except Exception as e:
             pass
 
 async def __main():
     global ip_addresses
-
     count = 0
 
     while(True):
         
         if count == 0:
-            ip_addresses = []
             r = requests.get("https://www.proxy-list.download/api/v1/get?type=https")
-            ip_addresses.extend(r.text.split('\r\n'))
+            ip_addresses = r.text.split('\r\n')
             if len(ip_addresses) < 2:
                 raise Exception('Unable to get proxy list')
             else:
@@ -195,7 +189,6 @@ async def __main():
 
         await GetLatestPastes()
         downloadRAW()
-        #await downloadRAWAsync()
         await asyncio.sleep(10)
         count = count + 1
         if count == 20:
