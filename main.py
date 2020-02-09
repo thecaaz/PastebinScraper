@@ -128,9 +128,8 @@ def downloadRAW():
     
     session = Session()
 
-    for paste in upload_pastes:
-        session.add(paste)
-
+    session.bulk_save_objects(upload_pastes)
+    
     session.commit()
     session.close()
 
