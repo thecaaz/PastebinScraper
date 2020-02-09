@@ -45,9 +45,6 @@ async def GetLatestPastes():
                 succeeded = True
         except Exception as e:
             pass
-    
-
-    # html: str = await __getContentAsStringFrom('https://pastebin.com/archive')
 
     parsed_html = BeautifulSoup(html, features='html.parser')
     pastebinsMainTable_html = parsed_html.body.find('table', attrs={'class': 'maintable'})
@@ -79,8 +76,8 @@ async def GetLatestPastes():
     except:
         pass
 
-    if len(savedPastebins) > 99:
-        savedPastebins = savedPastebins[50:]
+    if len(savedPastebins) > 200:
+        savedPastebins = savedPastebins[-60:]
 
     for fetchedPaste in pastebins:
         exists = False
@@ -129,7 +126,7 @@ def downloadRAW():
     session = Session()
 
     session.bulk_save_objects(upload_pastes)
-    
+
     session.commit()
     session.close()
 
