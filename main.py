@@ -15,6 +15,7 @@ import Classes
 from base import Session
 
 ip_addresses = []
+upload_pastes = []
 
 def getRandomProxy():
     global ip_addresses
@@ -68,7 +69,6 @@ async def GetLatestPastes():
         except:
             paste['language'] = ''
 
-        #if paste['name'] == 'Untitled':
         pastebins.append(paste)
 
     savedPastebins = []
@@ -95,6 +95,8 @@ async def GetLatestPastes():
 
 
 def downloadRAW():
+    global upload_pastes
+
     try:
         os.makedirs('Raw')
     except FileExistsError:
@@ -110,19 +112,30 @@ def downloadRAW():
         if 'downloaded' in pastebin.keys():
             continue
 
-        #process = Thread(target=downloadSingleRAW, args=[pastebin, savedPastebins])
-        #process.start()
-        #threads.append(process)
+        process = Thread(target=downloadSingleRAW, args=[pastebin, savedPastebins])
+        process.start()
+        threads.append(process)
 
-        downloadSingleRAW(pastebin,savedPastebins)
+        #downloadSingleRAW(pastebin,savedPastebins)
     
     for process in threads:
         process.join()
+    
+    session = Session()
+
+    for paste in upload_pastes:
+        session.add(paste)
+
+    session.commit()
+    session.close()
+
+    print('Inserted ' + str(len(upload_pastes)) + ' new pastes')
 
     with open('data.json', 'w') as fp:
         json.dump(savedPastebins, fp)
 
 def downloadSingleRAW(pastebin,savedPastebins):
+    global upload_pastes
     succeeded = False
 
     while succeeded is False:
@@ -144,34 +157,23 @@ def downloadSingleRAW(pastebin,savedPastebins):
             if 'Completing the CAPTCHA' in html or 'blocked your IP from accessing our website because we have' in html or 'resolve_captcha_headline' in html:
                 raise Exception()
 
-            with open('Raw/' + str(len(savedPastebins)) + pastebin['href'].replace('/raw/','')+'.txt', 'w', encoding='utf-8') as fp:
-                fp.write('Pastename: ' + pastebin['name'] + '\r\n')
-                fp.write(html)
-                pastebin['downloaded'] = True
-                with open('data.json', 'w') as fp:
-                    json.dump(savedPastebins, fp)
-                succeeded = True
-                print('Raw ' + pastebin['href'] + ' downloaded')
-                continue
+            paste = Classes.Paste()
+            paste.href = pastebin['href']
+            paste.name = pastebin['name']
+            paste.language = pastebin['language']
+            paste.content = html.encode("utf-8")
+            succeeded = True
+            pastebin['downloaded'] = True
+            with open('data.json', 'w') as fp:
+                json.dump(savedPastebins, fp)
+            upload_pastes.append(paste)
+            print('Raw ' + pastebin['href'] + ' downloaded')
 
         except Exception as e:
             pass
 
 async def __main():
     global ip_addresses
-
-    session = Session()
-
-    paste = Classes.Paste()
-    paste.content = 'Content'
-    paste.language = 'Language'
-    paste.name = 'Name'
-
-    #session.add(paste)
-
-    session.commit()
-    session.close()
-
     count = 0
 
     while(True):
