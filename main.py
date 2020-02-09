@@ -79,6 +79,9 @@ async def GetLatestPastes():
     except:
         pass
 
+    if len(savedPastebins) > 99:
+        savedPastebins = savedPastebins[50:]
+
     for fetchedPaste in pastebins:
         exists = False
         for savedPaste in savedPastebins:
@@ -96,6 +99,8 @@ async def GetLatestPastes():
 
 def downloadRAW():
     global upload_pastes
+
+    upload_pastes = []
 
     try:
         os.makedirs('Raw')
