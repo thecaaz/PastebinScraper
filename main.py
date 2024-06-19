@@ -191,7 +191,7 @@ async def __main():
         downloadRAW()
         await asyncio.sleep(10)
         count = count + 1
-        if count == 20:
+        if count == 9:
             count = 0
 
 if __name__ == "__main__":
